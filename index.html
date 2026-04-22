@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yabujin Music Player</title>
+    <style>
+        body {
+            margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+            color: white; font-family: 'Courier New', monospace; overflow: hidden;
+            /* ВСТАВЬ ССЫЛКУ НИЖЕ ВМЕСТО ЗАГЛУШКИ */
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.4)), 
+                        url("https://i.ibb.co/2797k0wv/a267bd3c72feb2300aecb36085195edf.jpg") center/cover no-repeat fixed;
+        }
+
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 10;
+        }
+
+        .card {
+            background: rgba(5, 5, 5, 0.65); /* ТВОЯ ПРОЗРАЧНОСТЬ */
+            backdrop-filter: blur(5px); /* РАЗМЫТИЕ */
+            padding: 30px; width: 90%; max-width: 450px;
+            text-align: center; position: relative; z-index: 5;
+            border-left: 5px solid #ff0000; border-right: 5px solid #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+            animation: neon-pulse 4s infinite;
+        }
+
+        @keyframes neon-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 50px rgba(255, 0, 0, 0.7); }
+        }
+
+        .glitch { font-size: 24px; font-weight: 900; position: relative; color: white; text-transform: uppercase; letter-spacing: 2px; }
+        .glitch::after {
+            content: attr(data-text); position: absolute; left: 2px; text-shadow: -2px 0 red;
+            top: 0; background: transparent; overflow: hidden; clip: rect(0, 900px, 0, 0);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim { 0% { clip: rect(10px, 9999px, 50px, 0); } 100% { clip: rect(80px, 9999px, 100px, 0); } }
+
+        input {
+            width: 100%; padding: 15px; margin: 15px 0; background: #2a2a2a;
+            border: 1px solid #444; color: white; font-weight: bold; box-sizing: border-box;
+        }
+
+        .button-group { display: flex; gap: 10px; }
+        button { flex: 2; padding: 15px; border: none; background: linear-gradient(to right, #800000, #ff0000); color: white; font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+        button:hover { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        .clear-btn { flex: 1; background: #333; font-size: 10px; }
+
+        #player { margin-top: 20px; border: 1px solid #222; min-height: 166px; }
+
+        .playlist-container { margin-top: 20px; text-align: left; max-height: 150px; overflow-y: auto; border-top: 2px solid #ff0000; padding-top: 10px; }
+        h3 { color: #ff0000; font-size: 14px; margin-top: 0; }
+        .track-item { background: rgba(255, 0, 0, 0.05); margin-bottom: 8px; padding: 10px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #800000; }
+        .delete-btn { color: #ff0000; cursor: pointer; padding: 5px; border: 1px solid #ff0000; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="card">
+        <h2 class="glitch" data-text="DROP ME BRO:">DROP ME BRO:</h2>
+        <input type="text" id="url" placeholder="ССЫЛКА SOUNDCLOUD...">
+        <div class="button-group">
+            <button onclick="addTrack()">ADD TO LIST</button>
+            <button onclick="clearAll()" class="clear-btn">CLEAR ALL</button>
+        </div>
+        <div id="player"></div>
+        <div class="playlist-container">
+            <h3>MY PLAYLIST:</h3>
+            <div id="playlist"></div>
+        </div>
+    </div>
+
+    <script>
+        let mySongs = JSON.parse(localStorage.getItem('myPlaylist')) || [];
+        renderPlaylist();
+
+        function addTrack() {
+            const link = document.getElementById('url').value;
+            if (link.includes('soundcloud.com')) {
+                mySongs.push(link);
+                saveAndRefresh();
+                play(link);
+                document.getElementById('url').value = "";
+            } else { alert("БРО, ЭТО НЕ SOUNDCLOUD!"); }
+        }
+
+        function play(link) {
+            const area = document.getElementById('player');
+            area.innerHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
+            src="https://soundcloud.com{encodeURIComponent(link)}&color=%23ff0000&auto_play=true&hide_related=true&show_comments=false"></iframe>`;
+        }
+
+        function renderPlaylist() {
+            const listArea = document.getElementById('playlist');
+            listArea.innerHTML = "";
+            mySongs.forEach((song, index) => {
+                const item = document.createElement('div');
+                item.className = 'track-item';
+                // Берем кусок ссылки для названия
+                const trackName = song.split('/').pop().substring(0, 15).toUpperCase();
+                item.innerHTML = `
+                    <span style="cursor:pointer" onclick="play('${song}')">#${index + 1} ${trackName}...</span>
+                    <span class="delete-btn" onclick="deleteTrack(${index})">X</span>
+                `;
+                listArea.appendChild(item);
+            });
+        }
+
+        function deleteTrack(index) {
+            mySongs.splice(index, 1);
+            saveAndRefresh();
+        }
+
+        function clearAll() {
+            if(confirm("УДАЛИТЬ ВСЁ?")) {
+                mySongs = [];
+                saveAndRefresh();
+                document.getElementById('player').innerHTML = "";
+            }
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('myPlaylist', JSON.stringify(mySongs));
+            renderPlaylist();
+        }
+    </script>
+</body>
+</html>
